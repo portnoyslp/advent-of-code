@@ -67,7 +67,7 @@ class Droid:
         return False
 
     def step(self, direction):
-        self.droid.input(int(direction))
+        self.droid.my_input(int(direction))
         output_status = self.droid.execute()
         if output_status is None:
             raise RuntimeError('Unexpected end of program')

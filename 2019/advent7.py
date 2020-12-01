@@ -34,14 +34,14 @@ def run_amplifiers_feedback_loop(amp_program_str, phases):
     amps = []
     for phase in phases:
         machine = intcode.Intcode(memory)
-        machine.input(phase)
+        machine.my_input(phase)
         amps.append(machine)
     current_output = 0
     final_output = 0
     while current_output != None:
         final_output = current_output
         amp = amps[0]
-        amp.input(current_output)
+        amp.my_input(current_output)
         current_output = amp.execute()
         # rotate amps
         amps = amps[1:] + amps[:1]

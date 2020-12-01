@@ -17,7 +17,7 @@ def paintbot(program_str, start_panel_color):
     panels[f"{pos[0], pos[1]}"] = start_panel_color
     while True:
         posStr = f"{pos[0], pos[1]}"
-        painter.input(panels[posStr])
+        painter.my_input(panels[posStr])
         output_color = painter.execute()
         if output_color is not None:
             panels[posStr] = output_color

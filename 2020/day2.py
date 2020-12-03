@@ -3,9 +3,6 @@ from aocd import data
 
 
 class PasswordChecker:
-    def __init__(self):
-        pass
-
     def valid_password(self, line):
         try:
             low, high, needed_char, pw = self.parse_line(line)

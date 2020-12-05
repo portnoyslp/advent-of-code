@@ -1,6 +1,6 @@
 from aocd import data
 import networkx
-
+from functools import lru_cache
 
 class Vault:
     def __init__(self):
@@ -48,43 +48,68 @@ class Vault:
         return item != '' and item.isupper()
 
     @staticmethod
+    def __is_key(item):
+        return item != '' and item.islower()
+
+    @staticmethod
     def __key_for_door(item):
         return item.lower()
+
+    def __all_keys(self):
+        return list(filter(lambda x: x.islower(), self.items.keys()))
 
     def build_key_graph(self):
         # The key graph is a directed graph where the nodes are referenced by the item name and the list of keys
         # collected to that point. The edges are annotated with the length required.
         # Start with @
         self.key_graph.add_node('@:')
-        pending_nodes = ['@:']
+        pending_nodes = [('@:', 0)]
+        length_bound = 99999999999
+        all_keys_str = ''.join(sorted(self.__all_keys()))
         while len(pending_nodes) > 0:
-            origin_node = pending_nodes.pop()
-            loc_item, key_list = origin_node.split(':')
-            key_list = [key for key in key_list]
+            (origin_node, current_path_len) = pending_nodes.pop()
+            loc_item, key_list_str = origin_node.split(':')
+            if key_list_str == all_keys_str:
+                if current_path_len < length_bound:
+                    length_bound = current_path_len
+                continue
+            if current_path_len >= length_bound:
+                # We already have a current path length which is longer than one we found; so skip finding
+                # connections.
+                continue
+            key_list = [key for key in key_list_str]
             for connection in self.__connections(self.items[loc_item], key_list):
-                path = networkx.shortest_path(self.plan_graph, self.items[loc_item], self.items[connection])
+                path = self.get_plan_path(connection, loc_item)
                 # If we can draw a path to that node with these keys, create a new node and edge.
                 is_good_path = True
-                for node in path:
+                add_keys_to_path = []
+                for node in path[1:-1]:
                     plan_node = self.plan_graph.nodes[node]
                     item = plan_node['item'] if 'item' in plan_node else '-'
                     if self.__is_door(item) and self.__key_for_door(item) not in key_list:
                         is_good_path = False
                         break
+                    if self.__is_key(item) and item not in key_list:
+                        add_keys_to_path.append(item)
                 if is_good_path:
                     new_key_list = [key for key in key_list]
                     new_key_list.append(connection)
+                    new_key_list.extend(add_keys_to_path)
                     new_key_list.sort()
                     dest_node = connection + ':' + ''.join(new_key_list)
                     self.key_graph.add_node(dest_node)
                     self.key_graph.add_edge(origin_node, dest_node, weight=len(path) - 1)
-                    pending_nodes.append(dest_node)
+                    pending_nodes.append((dest_node, current_path_len + len(path) - 1))
+
+    @lru_cache(maxsize=512)
+    def get_plan_path(self, connection, loc_item):
+        return networkx.shortest_path(self.plan_graph, self.items[loc_item], self.items[connection])
 
     def shortest_path_length(self):
         self.build_plan_graph()
         self.build_key_graph()
         # Find shortest path in key graph from @ to any node with all the keys.
-        all_keys = list(filter(lambda x: x.islower(), self.items.keys()))
+        all_keys = self.__all_keys()
         all_keys.sort()
         dest_nodes = list(filter(lambda node: node.endswith(''.join(all_keys)), self.key_graph.nodes()))
         shortest_path = 100000

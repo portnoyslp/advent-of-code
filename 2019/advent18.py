@@ -2,6 +2,7 @@ from aocd import data
 import networkx
 from functools import lru_cache
 
+
 class Vault:
     def __init__(self):
         self.vault = []
@@ -58,27 +59,28 @@ class Vault:
     def __all_keys(self):
         return list(filter(lambda x: x.islower(), self.items.keys()))
 
-    def build_key_graph(self):
-        # The key graph is a directed graph where the nodes are referenced by the item name and the list of keys
-        # collected to that point. The edges are annotated with the length required.
-        # Start with @
-        self.key_graph.add_node('@:')
-        pending_nodes = [('@:', 0)]
-        length_bound = 99999999999
-        all_keys_str = ''.join(sorted(self.__all_keys()))
-        while len(pending_nodes) > 0:
-            (origin_node, current_path_len) = pending_nodes.pop()
-            loc_item, key_list_str = origin_node.split(':')
-            if key_list_str == all_keys_str:
-                if current_path_len < length_bound:
-                    length_bound = current_path_len
-                continue
+    def dijkstra_over_graph(self):
+        # Using Dijkstra, go over a simplified version of the graph. Nodes are referenced by the key at the location,
+        # and the sorted set of keys that would be collected at that point.
+        visited_nodes = set()
+        node_distances = {}
+        current_node = '@:'  # start location, with no keys
+        node_distances[current_node] = 0
+        all_keys_set = set(self.__all_keys())
+        while True:
+            # Generate all unvisited connection nodes.
+            loc_item, key_list_str = current_node.split(':')
             key_set = set(key_list_str)
             for connection in self.__connections(self.items[loc_item], key_set):
+                # Would we have already visited this node?
+                new_set = set(key_set)
+                new_set.add(connection)
+                new_node = connection + ':' + ''.join(sorted(new_set))
+                if new_node in visited_nodes:
+                    continue
                 path = self.get_plan_path(connection, loc_item)
-                # If we can draw a path to that node with these keys, create a new node and edge.
+                # Check for doors or other keys in the way
                 is_good_path = True
-                add_keys_to_path = []
                 for node in path[1:-1]:
                     plan_node = self.plan_graph.nodes[node]
                     item = plan_node['item'] if 'item' in plan_node else '-'
@@ -88,38 +90,33 @@ class Vault:
                     if self.__is_key(item) and item not in key_set:
                         # This is considered a non-good path
                         is_good_path = False
+                        break
                 if is_good_path:
-                    if current_path_len + len(path) - 1 >= length_bound:
-                        # We already have a current path length which is longer than one we found;
-                        # so don't bother adding.
-                        continue
-                    new_key_list = [key for key in key_set]
-                    new_key_list.append(connection)
-                    new_key_list.extend(add_keys_to_path)
-                    new_key_list.sort()
-                    dest_node = connection + ':' + ''.join(new_key_list)
-                    self.key_graph.add_node(dest_node)
-                    self.key_graph.add_edge(origin_node, dest_node, weight=len(path) - 1)
-                    pending_nodes.append((dest_node, current_path_len + len(path) - 1))
+                    if new_node in node_distances:
+                        node_distances[new_node] = min(node_distances[new_node],
+                                                       node_distances[current_node] + len(path) - 1)
+                    else:
+                        node_distances[new_node] = node_distances[current_node] + len(path) - 1
+            if key_set == all_keys_set:
+                # We're done, we've fully visited a node where we have all the keys.
+                return node_distances[current_node]
+            visited_nodes.add(current_node)
+            min_distance = 9999999999
+            # Figure out the new current node and continue the loop
+            for node, dist in node_distances.items():
+                if node not in visited_nodes and dist < min_distance:
+                    min_distance = dist
+                    current_node = node
 
     @lru_cache(maxsize=512)
     def get_plan_path(self, connection, loc_item):
+        if connection < loc_item:
+            return self.get_plan_path(loc_item, connection)
         return networkx.shortest_path(self.plan_graph, self.items[loc_item], self.items[connection])
 
     def shortest_path_length(self):
         self.build_plan_graph()
-        self.build_key_graph()
-        # Find shortest path in key graph from @ to any node with all the keys.
-        all_keys = self.__all_keys()
-        all_keys.sort()
-        dest_nodes = list(filter(lambda node: node.endswith(''.join(all_keys)), self.key_graph.nodes()))
-        shortest_path = 100000
-        start_node = '@:'
-        for dest_node in dest_nodes:
-            len = networkx.shortest_path_length(self.key_graph, start_node, dest_node, weight='weight')
-            if len < shortest_path:
-                shortest_path = len
-        return shortest_path
+        return self.dijkstra_over_graph()
 
 
 # Plan:
@@ -178,3 +175,5 @@ check('''########################
 ###g#h#i################
 ########################
 ''', 81)
+
+print(f'18a: {find_length(data)}')

@@ -39,7 +39,7 @@ class Vault:
             if node2 in self.plan_graph:
                 self.plan_graph.add_edge(node, node2)
 
-    def __connections(self, start_item, have_keys=[]):
+    def __connections(self, start_item, have_keys=set()):
         return list(
             filter(lambda item: item != start_item and item not in have_keys and item.islower(), self.items.keys()))
 
@@ -73,12 +73,8 @@ class Vault:
                 if current_path_len < length_bound:
                     length_bound = current_path_len
                 continue
-            if current_path_len >= length_bound:
-                # We already have a current path length which is longer than one we found; so skip finding
-                # connections.
-                continue
-            key_list = [key for key in key_list_str]
-            for connection in self.__connections(self.items[loc_item], key_list):
+            key_set = set(key_list_str)
+            for connection in self.__connections(self.items[loc_item], key_set):
                 path = self.get_plan_path(connection, loc_item)
                 # If we can draw a path to that node with these keys, create a new node and edge.
                 is_good_path = True
@@ -86,13 +82,18 @@ class Vault:
                 for node in path[1:-1]:
                     plan_node = self.plan_graph.nodes[node]
                     item = plan_node['item'] if 'item' in plan_node else '-'
-                    if self.__is_door(item) and self.__key_for_door(item) not in key_list:
+                    if self.__is_door(item) and self.__key_for_door(item) not in key_set:
                         is_good_path = False
                         break
-                    if self.__is_key(item) and item not in key_list:
-                        add_keys_to_path.append(item)
+                    if self.__is_key(item) and item not in key_set:
+                        # This is considered a non-good path
+                        is_good_path = False
                 if is_good_path:
-                    new_key_list = [key for key in key_list]
+                    if current_path_len + len(path) - 1 >= length_bound:
+                        # We already have a current path length which is longer than one we found;
+                        # so don't bother adding.
+                        continue
+                    new_key_list = [key for key in key_set]
                     new_key_list.append(connection)
                     new_key_list.extend(add_keys_to_path)
                     new_key_list.sort()

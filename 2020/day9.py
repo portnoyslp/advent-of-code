@@ -2,12 +2,10 @@ from aocd import data
 
 
 def check_subset(subset, target):
-    subset_dict = {}
+    subset = set(subset)
     for val in subset:
-        if target - (val - 1) in subset_dict or target - (val + 1) in subset_dict:
+        if target - val in subset and target != 2 * val:
             return True
-        subset_dict[val - 1] = val
-        subset_dict[val + 1] = val
     return False
 
 

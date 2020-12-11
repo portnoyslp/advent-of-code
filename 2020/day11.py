@@ -1,6 +1,7 @@
 from aocd import data
 from scipy.signal import convolve2d
 import numpy as np
+from functools import lru_cache
 
 
 class Seating:
@@ -40,21 +41,26 @@ class Seating:
         for xc in range(occupied.shape[0]):
             for yc in range(occupied.shape[1]):
                 if self.seat_mask[xc][yc]:
-                    for dir in [(-1,0),(-1,-1),(0,-1),(1,-1),(1,0),(1,1),(0,1),(-1,1)]:
-                        occ = self.seat_in_dir_occupied((xc,yc), dir, occupied)
-                        if (occ):
+                    for seat in self.visible_seats((xc, yc)):
+                        if occupied[seat[0]][seat[1]]:
                             num_neighbors[xc][yc] += 1
         new_occupied = ((num_neighbors == 0) | (occupied & (num_neighbors < 5))) & self.seat_mask
         return new_occupied
 
-    def seat_in_dir_occupied(self, origin, dir, occupied):
-        cur_seat = origin
-        while True:
-            cur_seat = (cur_seat[0] + dir[0], cur_seat[1] + dir[1])
-            if cur_seat[0] not in range(self.seat_mask.shape[0]) or cur_seat[1] not in range(self.seat_mask.shape[1]):
-                return False
-            if self.seat_mask[cur_seat[0]][cur_seat[1]]:
-                return occupied[cur_seat[0]][cur_seat[1]]
+    @lru_cache(maxsize=None)
+    def visible_seats(self, origin):
+        visible_seats = []
+        for dir in [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1)]:
+            cur_seat = origin
+            while True:
+                cur_seat = (cur_seat[0] + dir[0], cur_seat[1] + dir[1])
+                if cur_seat[0] not in range(self.seat_mask.shape[0]) or cur_seat[1] not in range(
+                        self.seat_mask.shape[1]):
+                    break
+                if self.seat_mask[cur_seat[0]][cur_seat[1]]:
+                    visible_seats.append(cur_seat)
+                    break
+        return visible_seats
 
     @classmethod
     def steady_state_num_occupied(cls, input_str):

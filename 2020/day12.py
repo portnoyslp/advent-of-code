@@ -40,7 +40,8 @@ class Ferry:
         ferry = cls()
         for inst in input_str.splitlines():
             op, val = inst[0], int(inst[1:])
-            ferry.op_dict[op](val)
+            if ferry.op_dict[op]:
+                ferry.op_dict[op](val)
         return int(abs(ferry.position[0]) + abs(ferry.position[1]))
 
 
@@ -51,6 +52,7 @@ R90
 F11'''
 assert Ferry.run_instructions(test_input) == 25
 print('12a: ', Ferry.run_instructions(data))
+
 
 class Ferry2(Ferry):
     def __init__(self):
@@ -71,6 +73,7 @@ class Ferry2(Ferry):
 
     def east(self, dist):
         self.waypoint += dist * np.array([1, 0])
+
 
 assert Ferry2.run_instructions(test_input) == 286
 print('12b: ', Ferry2.run_instructions(data))

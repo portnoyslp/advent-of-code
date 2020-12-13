@@ -2,6 +2,7 @@ from aocd import data
 from intcode import Intcode
 import numpy as np
 import math
+from functools import lru_cache
 
 
 class TractorBeam:
@@ -9,17 +10,21 @@ class TractorBeam:
         self.machine = machine
 
     def count_tractor(self):
-        cnt = 0
-        drawing = np.full([50, 50], '.')
-        for x in range(50):
-            for y in range(50):
+        drawing = self.create_drawing(50)
+        return np.count_nonzero(drawing == '#')
+
+    def create_drawing(self, square_width):
+        drawing = np.full([square_width, square_width], '.')
+        for x in range(square_width):
+            for y in range(square_width):
                 out = self.check_for_tractor_beam(x, y)
                 if out == 1:
-                    cnt += 1
-                drawing[y][x] = '#' if out == 1 else '.'
-        print('\n'.join([''.join(row) for row in drawing]))
-        return cnt
+                    drawing[y][x] = '#' if out == 1 else '.'
+        return drawing
 
+
+
+    @lru_cache(maxsize=None)
     def check_for_tractor_beam(self, x, y):
         beam = Intcode(self.machine)
         beam.input([x, y])
@@ -44,9 +49,29 @@ class TractorBeam:
         ll = self.check_for_tractor_beam(x, y + 99) == '#'
         return ul & ur & ll, ul, ur, ll
 
-    def binary_search_for_tractor_beam(self):
+    def find_cross_point_y(self, x, y1, y2):
+        # binary search to find point where beam goes from on to off. Returns last point where on.
+        # Assumes that we know that x,y1 is in the beam, and x,y2 is not.
+        if y2 - y1 == 1:
+            return y1
+        mid = (y1 + y2) // 2
+        if self.check_for_tractor_beam(x, mid):
+            return self.find_cross_point_y(x, mid, y2)
+        return self.find_cross_point_y(x, y1, mid)
+
+    def check_beam_x(self, x, suggested_y):
+        # given an x coordinate, find the bottom location where the beam turns off.  Use the suggestion
+        # as a starting point.
+        # then find the y-100 spot, and determine if x+100 at that point is at the edge of the beam.
+        # Returns an indication of which direction to go:
+        #  (-1, y_coord) -> beam is too wide at the y_coord, so we should try shrinking the x coord
+        #  (1, y_coord) -> beam is too short, so try increasing x.
+        #  (0, y_coord) -> we found a match
+        pass
+
+
+    def search_for_tractor_square(self):
         x_limits = [800, 1600]
-        y_limits = [640, 1280]
         while x_limits[1] - x_limits[0] > 0 and y_limits[1] - y_limits[0] > 0:
             x_mid, y_mid = self.calculate_mid(x_limits, y_limits)
             square_fits, ul_in, ur_in, ll_in = self.square_in_beam(x_mid, y_mid)
@@ -83,4 +108,5 @@ class TractorBeam:
 
 
 #print(f'19a: {TractorBeam(data).count_tractor()}')
-print(f'19b: {TractorBeam(data).binary_search_for_tractor_beam()}')
+print('\n'.join(f'{num} ' + ''.join(row) for (num, row) in enumerate(TractorBeam(data).create_drawing(100))))
+print(f'19b: {TractorBeam(data).search_for_tractor_square()}')

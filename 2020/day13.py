@@ -35,7 +35,8 @@ def gold_coin_timestamp(input_str):
         mods.append(bus)
         val = (bus - i) % bus
         vals.append(val)
-    return chinese_remainder(mods, vals)
+    #return chinese_remainder(mods, vals)
+    return my_crt(mods, vals)
 
 
 def chinese_remainder(mods_list, vals_list):
@@ -57,6 +58,18 @@ def mul_inv(a, b):
         x0, x1 = x1 - q * x0, x0
     if x1 < 0: x1 += b0
     return x1
+
+def my_crt(mods_list, vals_list):
+    cur_skip = 1
+    result = 0
+    while len(mods_list) > 0:
+        mod = mods_list.pop()
+        val = vals_list.pop()
+        # loop until we get a match for result % mod = val
+        while result % mod != val:
+            result += cur_skip
+        cur_skip *= mod
+    return result
 
 
 assert get_earliest_bus('''939

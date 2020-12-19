@@ -121,4 +121,60 @@ assert Homework2().process('2 * 3 + (4 * 5)') == 46
 assert Homework2().process('5 + (8 * 3 + 9 + 3 * 4 * 3)') == 1445
 assert Homework2().process('5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))') == 669060
 assert Homework2().process('((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2') == 23340
-print('18a: ', process_all2(data))
+print('18b: ', process_all2(data))
+
+# PLY Lexer version
+import ply.yacc as yacc
+import ply.lex as lex
+
+tokens = ('NUMBER', 'OPEN', 'CLOSE', 'PLUS', 'MUL')
+t_PLUS = r'\+'
+t_MUL = r'\*'
+t_OPEN = r'\('
+t_CLOSE = r'\)'
+def t_NUMBER(t):
+    r'\d+'
+    t.value = int(t.value)
+    return t
+
+def t_error(t):
+    print("Oopsie: Illegal character '%s'" % t.value[0])
+    t.lexer.skip(1)
+
+t_ignore = ' '
+lexer = lex.lex()
+
+# Parsing
+precedence = (('left', 'MUL'), ('left', 'PLUS'))
+
+def p_expression_group(t):
+    'expression : OPEN expression CLOSE'
+    t[0] = t[2]
+
+def p_expression_binop(t):
+    '''expression : expression PLUS expression
+                  | expression MUL expression'''
+    if t[2] == '+' : t[0] = t[1] + t[3]
+    elif t[2] == '*' : t[0] = t[1] * t[3]
+
+def p_expression_number(t):
+    'expression : NUMBER'
+    t[0] = t[1]
+
+def p_error(t):
+    print("Oopsie: syntax error at '%s'" % t.value)
+
+parser = yacc.yacc()
+def parse_input(input_str):
+    return parser.parse(input_str)
+
+assert parse_input('1 + 2 * 3 + 4 * 5 + 6') == 231
+assert parse_input('1 + (2 * 3) + (4 * (5 + 6))') == 51
+assert parse_input('2 * 3 + (4 * 5)') == 46
+assert parse_input('5 + (8 * 3 + 9 + 3 * 4 * 3)') == 1445
+assert parse_input('5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))') == 669060
+assert parse_input('((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2') == 23340
+
+print('18b (parser): ', sum(map(parse_input, data.splitlines())))
+
+

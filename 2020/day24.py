@@ -59,11 +59,11 @@ class LobbyLayout:
         self.black_tiles = new_black_tiles
 
     def flip_for_days(self, num):
-        #self.print_hex_grid()
+        self.print_hex_grid()
         for n in range(num):
             self.day_flip()
-       #     self.print_hex_grid()
-       #     print(f"Day {n+1}: {len(self.black_tiles)}")
+            self.print_hex_grid()
+            print(f"Day {n+1}: {len(self.black_tiles)}")
         return len(self.black_tiles)
 
     def print_hex_grid(self):

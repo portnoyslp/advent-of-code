@@ -4,20 +4,19 @@ from scipy.ndimage import label
 from functools import reduce
 
 def local_minima(array2d):
-    return ((array2d < N.roll(array2d,  1, 0)) &
-        (array2d < N.roll(array2d, -1, 0)) &
-        (array2d < N.roll(array2d,  1, 1)) &
-        (array2d < N.roll(array2d, -1, 1)))
+    m = N.pad(array2d,1,constant_values=9)
+    return ((m < N.roll(m,  1, 0)) &
+        (m < N.roll(m, -1, 0)) &
+        (m < N.roll(m,  1, 1)) &
+        (m < N.roll(m, -1, 1)))[1:-1,1:-1]
 
 def risk_levels(data):
     arys = [N.fromiter(map(int,line), int) for line in data.splitlines()]
     start_ary = N.stack(arys)
 
     # pad starting array with a row of 10's around the edge, then use local_minima to find minima.
-    minima = local_minima(N.pad(start_ary, 1, 'constant', constant_values=9))[1:-1,1:-1]
-    risk_calc = N.vectorize(lambda v,b: v + 1 if b else 0)
-    out_ary = risk_calc(start_ary, minima)
-    return N.sum(out_ary)
+    minima = local_minima(start_ary)
+    return sum(N.extract(minima, start_ary) + 1)
 
 def basin_sizes(data):
     arys = [N.fromiter(map(int,line), int) for line in data.splitlines()]

@@ -39,7 +39,7 @@ def not_already_visited(node, visited, part2):
     if node == 'start':
         return False # already visited
     if not part2:
-        return node.isupper() or visited[node] < 1
+        return node.isupper() or visited[node] == 0
     # how many twice-visited lowercase nodes are there?
     num_doubles = len([entry for entry in visited.items() if entry[1] > 1 and entry[0][0].islower() ])
     return node.isupper() or num_doubles == 0 or visited[node] < 1

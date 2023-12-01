@@ -8,3 +8,5 @@
 .idea/vcs.xml
 2020/
 include/
+pyvenv.cfg
+.vscode/settings.json

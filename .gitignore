@@ -1,12 +1,8 @@
 /bin/
 /lib/python3.9/
-.idea/.gitignore
-.idea/advent-of-code.iml
-.idea/inspectionProfiles/
-.idea/misc.xml
-.idea/modules.xml
-.idea/vcs.xml
-2020/
+.idea/
 include/
+share/
 pyvenv.cfg
 .vscode/settings.json
+2019/__pycache__/

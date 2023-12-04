@@ -14,17 +14,22 @@ def run(data):
     return sum
 
 def part2(data):
-    sum = 0
+    card_info = []
     for line in data.splitlines():
-        match = re.match('Card +\d+: (.*) \| (.*)', line)
-        wins = set([int(x) for x in match.group(1).split()])
-        mine = [int(x) for x in match.group(2).split()]
+        match = re.match('Card +(\d+): (.*) \| (.*)', line)
+        card = int(match.group(1))
+        wins = set([int(x) for x in match.group(2).split()])
+        mine = [int(x) for x in match.group(3).split()]
         matches = [1 for x in mine if x in wins]
         num_matches = len(matches)
-        if num_matches > 0:
-          sum += pow(2, num_matches - 1)
-    return sum
+        card_info.append([1, num_matches])
 
+    for idx in range(len(card_info)):
+        card_data = card_info[idx]
+        [num_cards, num_matches] = card_data
+        for i in range(num_matches):
+            card_info[idx + i + 1][0] = card_info[idx + i + 1][0] + num_cards
+    return sum([x[0] for x in card_info])
 
 ex1='''Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
 Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19

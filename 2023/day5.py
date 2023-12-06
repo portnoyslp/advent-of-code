@@ -21,13 +21,25 @@ def part2(data):
     # Seeds are actually list pairs:
     seed_ranges = []
     for i in range(0, len(seeds), 2):
-        seed_ranges.append(()seeds[i], seeds[i+1]))
+        seed_ranges.append( (seeds[i], seeds[i] + seeds[i+1] - 1 ) )
+
+    min_location = 1000000000
+    val_ranges = seed_range_to_locations(mappings, seed_ranges)
+    val_ranges.sort(key=lambda x: x[0])
+    min_location = val_ranges[0][0]
+    return min_location
 
 def seed_to_location(mappings, seed):
     val = seed
     for chain in mapchain:
         val = range_map(mappings[chain], val)
     return val
+
+def seed_range_to_locations(mappings, seed_ranges):
+    ranges = seed_ranges
+    for chain in mapchain:
+        ranges = map_ranges(mappings[chain], ranges)
+    return ranges
 
 def parse_data(data, mappings):
     sections = data.split('\n\n')
@@ -51,8 +63,46 @@ def range_map(map, request):
     for k in map.keys():
         if k <= request < k + map[k][1]:
             return map[k][0] + (request - k)
+    # values that aren't in map are unchanged.
     return request
-            
+
+# maps a provided range to a set of ranges when going through the map.
+def map_range(map, request_range):
+    output = []
+    used_subranges = []
+    for k in map.keys():
+        key_range = (k, k + map[k][1] - 1)
+        if request_range[1] < key_range[0] or request_range[0] > key_range[1]:
+            # no overlap
+            continue
+        updated_range = (max(key_range[0], request_range[0]), min(key_range[1], request_range[1]))
+        used_subranges.append(updated_range)
+        output.append( (map[k][0] + (updated_range[0] - k), map[k][0] + (updated_range[1] - k)) )
+    if len(output) == 0:
+        # return range unmodified
+        return [request_range]
+
+    # Any values in range that weren't mapped are sent through unchanged.
+    used_subranges.sort(key=lambda x: x[0])
+    ranges_to_add = []
+    if used_subranges[0][0] > request_range[0]:
+        ranges_to_add.append(  (request_range[0], used_subranges[0][0] - 1) )
+    for idx in range(1, len(used_subranges)):
+        if used_subranges[idx-1][1] < used_subranges[idx][0] - 1:
+            ranges_to_add.append( (used_subranges[idx-1][1] + 1, used_subranges[idx][0] - 1) )
+    if used_subranges[-1][1] < request_range[1]:
+        ranges_to_add.append( (used_subranges[-1][1] + 1, request_range[1]) ) 
+    output.extend(ranges_to_add)
+    return output
+
+def map_ranges(map, request_ranges):
+    output = []
+    for range in request_ranges:
+        new_ranges = map_range(map, range)
+        output.extend(new_ranges)
+    output.sort(key = lambda x: x[0])
+    return output
+
 
 
 ex1='''seeds: 79 14 55 13
@@ -92,3 +142,5 @@ humidity-to-location map:
 
 assert run(ex1) == 35
 print('5a: ', run(data))
+assert part2(ex1) == 46
+print('5b: ', part2(data))

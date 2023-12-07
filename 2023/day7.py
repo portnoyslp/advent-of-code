@@ -19,23 +19,20 @@ def hand_value(hand, part=1):
 
 def hand_level(hand, part=1):
     card_cnts = defaultdict(int)
-    cnt_cards = defaultdict(set)
     for c in hand:
         card_cnts[c] += 1
-    for (card,cnt) in card_cnts.items():
-        cnt_cards[cnt].add(card)
+    cnt_cards = reverse_map(card_cnts)
     
     if part > 1:
         # turns Js into whatever has the most
         num_js = card_cnts['J']
         if num_js > 0 and num_js < 5:
             del card_cnts['J']
-            high_bucket = sorted(cnt_cards.keys())[-1]
+            cnt_cards = reverse_map(card_cnts)
+            high_bucket = sorted(card_cnts.values())[-1]
             card_cnts[next(iter(cnt_cards[high_bucket]))] += num_js
             # redo cnt_cards
-            cnt_cards.clear()
-            for (card,cnt) in card_cnts.items():
-                cnt_cards[cnt].add(card)
+            cnt_cards = reverse_map(card_cnts)
     
     if 5 in cnt_cards:
         # five of a kind
@@ -58,6 +55,11 @@ def hand_level(hand, part=1):
     # high card
     return 0
 
+def reverse_map(m):
+    inv = defaultdict(set)
+    for (k,v) in m.items():
+        inv[v].add(k)
+    return inv
 
 ex1='''32T3K 765
 T55J5 684

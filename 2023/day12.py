@@ -15,7 +15,7 @@ def run(data, part=1):
     return total
 
 @lru_cache(maxsize=None)
-def array_count(pattern, expected, lava_next):
+def array_count(pattern, expected, in_lava):
     dec_first = lambda a: (a[0] - 1,) + a[1:]
     if not expected:
         return 0 if '#' in pattern else 1
@@ -23,7 +23,7 @@ def array_count(pattern, expected, lava_next):
         return 0 if sum(expected) else 1
     if expected[0] == 0:
         return array_count(pattern[1:], expected[1:], False) if pattern[0] in '?.' else 0
-    if lava_next:
+    if in_lava:
         return array_count(pattern[1:], dec_first(expected), True) if pattern[0] in '?#' else 0
     if pattern[0] == '#':
         return array_count(pattern[1:], dec_first(expected), True)

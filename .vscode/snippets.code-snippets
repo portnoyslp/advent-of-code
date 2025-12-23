@@ -17,7 +17,7 @@
 	// }
 	"Python template": {
 		"scope": "python",
-		"prefix": "aocd"
+		"prefix": "aocd",
 		"body": [
 			"from aocd import data",
 			"",
